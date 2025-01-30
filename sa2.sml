@@ -1,7 +1,7 @@
 (* Solutions to SA2 assignment, Intro to ML *)
 
 (* Name: Amelia Matheson     *)
-(* Time spent on SA2: 6 *)
+(* Time spent on SA2: 10 *)
 
 (* Collaborators and references:
   ChatGPT - Explanation of unit testing examples
@@ -9,6 +9,7 @@
   ChatGPT - Fixing error with function binding while using foldl and lambda functions
   Claude - Fixing failing unit test for firstVowel
   Claude - Fixing failing unit test for zip
+  https://cs.wellesley.edu/~cs251/s16/slides/sml_lists_solns_1up.pdf - How to apply a function to a list
 *)
 
 (* indicate planning to use the Unit testing module *)
@@ -31,12 +32,8 @@ val checkExpectIntListList =
 
 *)
 
+(** MY SOLUTIONS **)
 
-(*QUESTIONS: Do we write additional unit tests for all functions?
-             Yes - test edge cases, normal cases
-*)
-
-(**** Problem 0 ****)
 
 
 (**** Problem A ****)
@@ -45,10 +42,13 @@ fun mynull []       = true
   | mynull (_::_)   = false
 
 val () =
-    Unit.checkExpectWith Bool.toString "mynull [] should be true"
-    (fn () => mynull [])
-    true
-
+  Unit.checkExpectWith Bool.toString "mynull [] should be true"
+  (fn () => mynull [])
+  true
+val () =
+  Unit.checkAssert
+  "mynull [1,2,3] should be false"
+  (fn () => mynull [1,2,3] = false)
 
 
 (**** Problem B ****)
@@ -65,7 +65,14 @@ val () =
     Unit.checkExpectWith Bool.toString "firstVowel 'ack' should be true"
     (fn () => firstVowel [#"a",#"c",#"k"])
     true
-
+val () =
+    Unit.checkAssert
+    "firstVowel 'b' should be false"
+    (fn () => firstVowel [#"b"] = false)
+val () =
+    Unit.checkAssert
+    "firstVowel [] should be true"
+    (fn () => firstVowel [] = false)
 
 
 
@@ -79,7 +86,15 @@ val () =
   "reverse [1,2] should be [2,1]"
   (fn () => reverse [1,2])
   [2,1]
-
+val () =
+  Unit.checkAssert
+  "reverse [1,2,3] should be [3,2,1]"
+  (fn () => reverse [1,2,3] = [3,2,1])
+val () =
+  Unit.checkExpectWith (Unit.listString Int.toString)
+  "reverse [1,2,3,4,5] should be [5,4,3,2,1]"
+  (fn () => reverse [])
+  []
 
 
 
@@ -113,17 +128,20 @@ fun zip ([], []) = []
   | zip (x::xs, y::ys) = (x, y) :: zip (xs, ys)
   | zip _ = raise Mismatch
 
-(*Converts a list of pairs to a string for unit testing*)
-fun pairListToString [] = "[]"
-  | pairListToString ((x,y)::rest) = 
-    "(" ^ Int.toString x ^ "," ^ Int.toString y ^ ")::" ^ pairListToString rest
 
 val () =
-  Unit.checkExnWith pairListToString
+  Unit.checkExnWith (Unit.listString
+                        (Unit.pairString Unit.intString Unit.intString))
   "zip ([1,2,3], [4,5]) should raise an exception"
   (fn () => zip ([1,2,3], [4,5]))
 val () =
-  Unit.checkExpectWith pairListToString
+  Unit.checkExnWith (Unit.listString
+                        (Unit.pairString Unit.intString Unit.intString))
+  "zip ([], [4,5]) should raise an exception"
+  (fn () => zip ([], [4,5]))
+val () =
+  Unit.checkExpectWith (Unit.listString
+                        (Unit.pairString Unit.intString Unit.intString))
   "zip ([1,2], [3,4]) should be [(1,3),(2,4)]"
   (fn () => zip ([1,2], [3,4]))
   [(1,3),(2,4)]
@@ -131,6 +149,13 @@ val () =
   Unit.checkAssert
   "zip ([], []) should be []"
   (fn () => zip ([], []) = [])
+val () =
+  Unit.checkExpectWith (Unit.listString
+                        (Unit.pairString Unit.intString Unit.stringString))
+  "zip ([1,2,3], [\"a\",\"b\",\"c\"]) should be [(1,\"a\"),(2,\"b\"),(3,\"c\")]"
+  (fn () => zip ([1,2,3], ["a","b","c"]))
+  [(1,"a"),(2,"b"),(3,"c")]
+
 
 
 (**** Problem F ****)
@@ -214,19 +239,43 @@ val () =
   "svgCircle (200, 300, 100, \"red\") should return <circle cx=\"200\" cy=\"300\" r=\"100\" fill=\"red\" />"
   (fn () => svgCircle (200, 300, 100, "red"))
   "<circle cx=\"200\" cy=\"300\" r=\"100\" fill=\"red\" />";
-
+val () =
+  Unit.checkExpectWith (fn x => x)
+  "svgCircle (100, 200, 50, \"blue\") should return <circle cx=\"100\" cy=\"200\" r=\"50\" fill=\"blue\" />"
+  (fn () => svgCircle (100, 200, 50, "blue"))
+  "<circle cx=\"100\" cy=\"200\" r=\"50\" fill=\"blue\" />";
 
 
 (**** Problem J ****)
-(*
-fun partition p (x :: xs) = ([],[])
+
+(* Google Gemini: "let", "in", and "end" are used together to create a local binding
+where you define variables within a specific scope, with "let" introducing the
+binding, "in" marking the expression to be evaluated using those local variables,
+and "end" signifying the end of that local scope*)
+
+fun partition f [] = ([], [])
+  | partition f (x::xs) = 
+    let
+      val (trues, falses) = partition f xs
+    in
+      if f x
+      then (x::trues, falses)  
+      else (trues, x::falses)  
+    end
 
 val () =
   Unit.checkExpectWith (fn (l1, l2) => "(" ^ Unit.listString Int.toString l1 ^ ", " ^ Unit.listString Int.toString l2 ^ ")")
   "partition (fn x => x mod 2 = 0) [1, 2, 3, 4, 5] should return ([2, 4], [1, 3, 5])"
   (fn () => partition (fn x => x mod 2 = 0) [1, 2, 3, 4, 5])
   ([2, 4], [1, 3, 5]);
-*)
+val () =
+  Unit.checkAssert
+  "partition (fn x => x mod 2 = 0) [1, 2, 3, 4, 5]; should return ([2, 4], [1, 3, 5])"
+  (fn () => partition (fn x => x mod 2 = 0) [1, 2, 3, 4, 5] = ([2, 4], [1, 3, 5]))
+val () =
+  Unit.checkAssert
+  "partition (Char.isAlpha) [] should return ([], [])"
+  (fn () => partition (Char.isAlpha) [] = ([], []))
 
 (* Unit testing reporting *)
 
