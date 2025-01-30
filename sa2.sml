@@ -8,6 +8,7 @@
   ChatGPT - Explanation of how to use foldl
   ChatGPT - Fixing error with function binding while using foldl and lambda functions
   Claude - Fixing failing unit test for firstVowel
+  Claude - Fixing failing unit test for zip
 *)
 
 (* indicate planning to use the Unit testing module *)
@@ -29,6 +30,14 @@ val checkExpectIntListList =
   Unit.checkExpectWith (Unit.listString (Unit.listString Unit.intString))
 
 *)
+
+
+(*QUESTIONS: Do we write additional unit tests for all functions?
+             Yes - test edge cases, normal cases
+*)
+
+(**** Problem 0 ****)
+
 
 (**** Problem A ****)
 
@@ -81,24 +90,47 @@ fun minlist [] = raise Match
   | minlist list = foldl (fn (x, acc) => Int.min(x, acc)) (valOf(Int.maxInt)) list;
 
 val () =
-  Unit.checkExnWith Int.toString
-  "minlist [] should raise an exception"
-  (fn () => minlist [])
+  Unit.checkAssert
+  "minlist [1,2,3,4,0] should be 0"
+  (fn () => minlist [1,2,3,4,0] = 0)
 
 val () =
   Unit.checkExpectWith Int.toString
   "minlist [1,2,3,4,0] should be 0"
   (fn () => minlist [1,2,3,4,0])
   0
-
+val () =
+  Unit.checkExnWith Int.toString
+  "minlist [] should raise an exception"
+  (fn () => minlist [])
 
 
 (**** Problem E ****)
-(*
-exception Mismatch
 
-fun zip _ = []
-*)
+exception Mismatch;
+
+fun zip ([], []) = []
+  | zip (x::xs, y::ys) = (x, y) :: zip (xs, ys)
+  | zip _ = raise Mismatch
+
+(*Converts a list of pairs to a string for unit testing*)
+fun pairListToString [] = "[]"
+  | pairListToString ((x,y)::rest) = 
+    "(" ^ Int.toString x ^ "," ^ Int.toString y ^ ")::" ^ pairListToString rest
+
+val () =
+  Unit.checkExnWith pairListToString
+  "zip ([1,2,3], [4,5]) should raise an exception"
+  (fn () => zip ([1,2,3], [4,5]))
+val () =
+  Unit.checkExpectWith pairListToString
+  "zip ([1,2], [3,4]) should be [(1,3),(2,4)]"
+  (fn () => zip ([1,2], [3,4]))
+  [(1,3),(2,4)]
+val () = 
+  Unit.checkAssert
+  "zip ([], []) should be []"
+  (fn () => zip ([], []) = [])
 
 
 (**** Problem F ****)
@@ -116,36 +148,73 @@ val () =
   "concat [[1,2,3], [4,5,6], [7,8,9]] should be [1,2,3,4,5,6,7,8,9]"
   (fn () => concat [[1,2,3], [4,5,6], [7,8,9]])
   [1,2,3,4,5,6,7,8,9]
+
 val () =
-  Unit.checkExpectWith (Unit.listString Int.toString)
-  "concat [[]] should be []"
-  (fn () => concat [[]])
-  []
+    Unit.checkAssert "concat [[1, 2], [3]] should be [1, 2, 3]"
+    (fn () => concat [] = [])
 
 
 
 (**** Problem G ****)
-(*
-fun isDigit _    = false;
-*)
+
+fun isDigit #"0" = true
+  | isDigit #"1" = true
+  | isDigit #"2" = true
+  | isDigit #"3" = true
+  | isDigit #"4" = true
+  | isDigit #"5" = true
+  | isDigit #"6" = true
+  | isDigit #"7" = true
+  | isDigit #"8" = true
+  | isDigit #"9" = true
+  | isDigit _    = false
+
+val () =
+    Unit.checkExpectWith Bool.toString "isDigit '1' should be true"
+    (fn () => isDigit #"1")
+    true
+val () =
+    Unit.checkExpectWith Bool.toString "isDigit 'a' should be false"
+    (fn () => isDigit #"a")
+    false
+val () =
+  Unit.checkAssert
+  "isDigit '0' should be true"
+  (fn () => isDigit #"0" = true)
+val () =
+  Unit.checkAssert
+  "isDigit 'n' should be false"
+  (fn () => isDigit #"n" = false)
 
 
 (**** Problem H ****)
-(*
-fun isAlpha c = false
-*)
+
+fun isAlpha c = (Char.ord(c) >= 65 andalso Char.ord(c) <= 90) orelse (Char.ord(c) >= 97 andalso Char.ord(c) <= 122)
+
+val () =
+  Unit.checkExpectWith Bool.toString "isAlpha 'a' should be true"
+  (fn () => isAlpha #"a")
+  true
+val () =
+  Unit.checkAssert
+  "isAlpha 'A' should be true"
+  (fn () => isAlpha #"A" = true)
+val () =
+  Unit.checkAssert
+  "isAlpha '1' should be false"
+  (fn () => isAlpha #"1" = false)
 
 
 (**** Problem I ****)
-(*
-fun svgCircle (cx, cy, r, fill) = "NOT IMPLEMENTED YET"
+
+fun svgCircle (cx, cy, r, fill) = "<circle cx=\"" ^ Int.toString cx ^ "\" cy=\"" ^ Int.toString cy ^ "\" r=\"" ^ Int.toString r ^ "\" fill=\"" ^ fill ^ "\" />"
 
 val () =
   Unit.checkExpectWith (fn x => x)
   "svgCircle (200, 300, 100, \"red\") should return <circle cx=\"200\" cy=\"300\" r=\"100\" fill=\"red\" />"
   (fn () => svgCircle (200, 300, 100, "red"))
   "<circle cx=\"200\" cy=\"300\" r=\"100\" fill=\"red\" />";
-*)
+
 
 
 (**** Problem J ****)
